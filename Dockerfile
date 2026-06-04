@@ -1,29 +1,38 @@
-FROM php:8.2-cli
+FROM php:8.4-cli
 
-# Instalar dependencias
+# Dependencias del sistema
 RUN apt-get update && apt-get install -y \
     git \
     unzip \
+    curl \
+    libpng-dev \
+    libjpeg62-turbo-dev \
+    libfreetype6-dev \
     libpq-dev \
     nodejs \
     npm
 
-# Instalar extensiones PHP
-RUN docker-php-ext-install pdo pdo_pgsql
+# Extensiones PHP
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg
 
-# Instalar Composer
+RUN docker-php-ext-install \
+    pdo \
+    pdo_pgsql \
+    gd
+
+# Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Directorio
+# Directorio trabajo
 WORKDIR /app
 
-# Copiar archivos
+# Copiar proyecto
 COPY . .
 
-# Instalar dependencias Laravel
+# Instalar Laravel
 RUN composer install --no-dev --optimize-autoloader
 
-# Instalar dependencias frontend
+# Compilar frontend
 RUN npm install && npm run build
 
 # Permisos
@@ -32,5 +41,5 @@ RUN chmod -R 777 storage bootstrap/cache
 # Puerto Render
 EXPOSE 10000
 
-# Comando inicio
+# Iniciar Laravel
 CMD php artisan serve --host=0.0.0.0 --port=10000
