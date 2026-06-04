@@ -6,6 +6,3 @@
 @theme {
     --font-sans: 'Montserrat', 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
 }
-
-/* ── Auth ── */
-@import './auth/login.css';
