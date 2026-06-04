@@ -64,9 +64,8 @@ RUN test -f public/build/manifest.json \
     && echo "✓ Vite manifest OK" \
     || (echo "✗ ERROR: public/build/manifest.json no fue generado" && exit 1)
 
-RUN grep -q "auth/login" public/build/manifest.json \
-    && echo "✓ login.css incluido en manifest" \
-    || (echo "✗ ERROR: login.css no está en manifest — verificar vite.config.js input[]" && exit 1)
+# login.css ya no pasa por Vite — se sirve como archivo estático
+# desde public/css/login.css con URL relativa /css/login.css
 
 # Limpiar cachés viejas (por si el COPY trajo caches de desarrollo local)
 # NO se ejecuta config:cache aquí porque APP_KEY y DATABASE_URL
