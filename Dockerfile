@@ -1,4 +1,4 @@
-FROM php:8.4-cli
+FROM php:8.4-apache
 
 # Dependencias sistema
 RUN apt-get update && apt-get install -y \
@@ -14,21 +14,33 @@ RUN apt-get update && apt-get install -y \
     nodejs \
     npm
 
-# Configurar GD
+# Extensiones PHP
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg
 
-# Instalar extensiones PHP
 RUN docker-php-ext-install \
     pdo \
     pdo_pgsql \
     gd \
     zip
 
+# Activar mod_rewrite
+RUN a2enmod rewrite
+
+# Configurar Apache
+ENV APACHE_DOCUMENT_ROOT /var/www/html/public
+
+RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' \
+    /etc/apache2/sites-available/*.conf
+
+RUN sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' \
+    /etc/apache2/apache2.conf \
+    /etc/apache2/conf-available/*.conf
+
 # Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 # Directorio
-WORKDIR /app
+WORKDIR /var/www/html
 
 # Copiar proyecto
 COPY . .
@@ -36,14 +48,18 @@ COPY . .
 # Instalar Laravel
 RUN composer install --no-dev --optimize-autoloader
 
-# Compilar frontend
-RUN npm install && npm run build
+# Build frontend
+RUN npm install
+RUN npm run build
 
 # Permisos
-RUN chmod -R 777 storage bootstrap/cache
+RUN chown -R www-data:www-data /var/www/html
+RUN chmod -R 775 storage bootstrap/cache
 
 # Puerto Render
 EXPOSE 10000
 
-# Ejecutar Laravel
-CMD php artisan serve --host=0.0.0.0 --port=10000
+# Apache puerto 10000
+RUN sed -i 's/80/10000/g' /etc/apache2/ports.conf /etc/apache2/sites-enabled/000-default.conf
+
+CMD ["apache2-foreground"]
