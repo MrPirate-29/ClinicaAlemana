@@ -1,10 +1,12 @@
 FROM php:8.4-cli
 
-# Dependencias del sistema
+# Dependencias sistema
 RUN apt-get update && apt-get install -y \
     git \
     unzip \
     curl \
+    zip \
+    libzip-dev \
     libpng-dev \
     libjpeg62-turbo-dev \
     libfreetype6-dev \
@@ -12,18 +14,20 @@ RUN apt-get update && apt-get install -y \
     nodejs \
     npm
 
-# Extensiones PHP
+# Configurar GD
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg
 
+# Instalar extensiones PHP
 RUN docker-php-ext-install \
     pdo \
     pdo_pgsql \
-    gd
+    gd \
+    zip
 
 # Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Directorio trabajo
+# Directorio
 WORKDIR /app
 
 # Copiar proyecto
@@ -41,5 +45,5 @@ RUN chmod -R 777 storage bootstrap/cache
 # Puerto Render
 EXPOSE 10000
 
-# Iniciar Laravel
+# Ejecutar Laravel
 CMD php artisan serve --host=0.0.0.0 --port=10000
