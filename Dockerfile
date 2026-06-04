@@ -45,12 +45,35 @@ WORKDIR /var/www/html
 # Copiar proyecto
 COPY . .
 
-# Instalar Laravel
+# ── CRÍTICO: APP_ENV=production hace que @vite() lea el manifest compilado.
+#    Sin esto, @vite() intenta conectarse al dev server (puerto 5173)
+#    que no existe en Render → el CSS del login nunca carga.
+#    Los dashboards no se ven afectados porque usan Tailwind CDN directamente.
+ENV APP_ENV=production
+
+# Instalar dependencias PHP
 RUN composer install --no-dev --optimize-autoloader
 
-# Build frontend
+# Build frontend — genera public/build/.vite/manifest.json
 RUN npm install
 RUN npm run build
+
+# Verificar que el manifest existe y contiene login.css
+# Si falla aquí, el deploy falla con mensaje claro en lugar de silenciosamente
+RUN test -f public/build/.vite/manifest.json \
+    && echo "✓ Vite manifest OK" \
+    || (echo "✗ ERROR: public/build/.vite/manifest.json no fue generado" && exit 1)
+
+RUN grep -q "auth/login" public/build/.vite/manifest.json \
+    && echo "✓ login.css incluido en manifest" \
+    || (echo "✗ ERROR: login.css no está en manifest — verificar vite.config.js input[]" && exit 1)
+
+# Limpiar cachés viejas (por si el COPY trajo caches de desarrollo local)
+# NO se ejecuta config:cache aquí porque APP_KEY y DATABASE_URL
+# son inyectados por Render en runtime, no en build time.
+RUN php artisan config:clear \
+    && php artisan view:clear \
+    && php artisan route:clear
 
 # Permisos
 RUN chown -R www-data:www-data /var/www/html
