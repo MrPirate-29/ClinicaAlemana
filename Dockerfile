@@ -59,12 +59,12 @@ RUN npm install
 RUN npm run build
 
 # Verificar que el manifest existe y contiene login.css
-# Si falla aquí, el deploy falla con mensaje claro en lugar de silenciosamente
-RUN test -f public/build/.vite/manifest.json \
+# laravel-vite-plugin coloca el manifest en public/build/manifest.json (no en .vite/)
+RUN test -f public/build/manifest.json \
     && echo "✓ Vite manifest OK" \
-    || (echo "✗ ERROR: public/build/.vite/manifest.json no fue generado" && exit 1)
+    || (echo "✗ ERROR: public/build/manifest.json no fue generado" && exit 1)
 
-RUN grep -q "auth/login" public/build/.vite/manifest.json \
+RUN grep -q "auth/login" public/build/manifest.json \
     && echo "✓ login.css incluido en manifest" \
     || (echo "✗ ERROR: login.css no está en manifest — verificar vite.config.js input[]" && exit 1)
 
