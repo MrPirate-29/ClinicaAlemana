@@ -12,6 +12,11 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Render (y cualquier proxy inverso) termina SSL externamente y reenvía
+        // HTTP internamente. Sin esto, asset() genera URLs http:// que el navegador
+        // bloquea por Mixed Content cuando la página se sirve por HTTPS.
+        $middleware->trustProxies(at: '*');
+
         $middleware->alias([
             'role' => \App\Http\Middleware\RoleMiddleware::class,
         ]);
